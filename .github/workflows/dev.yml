@@ -1,0 +1,64 @@
+name: Development
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dev:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openssh-server \
+            git bc bison build-essential curl flex g++-multilib \
+            gcc-multilib libssl-dev libelf-dev libncurses5-dev \
+            libncurses-dev python3 unzip zip rsync ccache \
+            lz4 zstd
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_CLIENT_SECRET }}
+          tags: tag:github
+
+      - name: Configure OpenSSH
+        run: |
+          sudo mkdir -p /home/runner/.ssh
+          echo "${{ secrets.SSH_PUBLIC_KEY }}" | sudo tee /home/runner/.ssh/authorized_keys >/dev/null
+
+          sudo chown -R runner:runner /home/runner/.ssh
+          sudo chmod 700 /home/runner/.ssh
+          sudo chmod 600 /home/runner/.ssh/authorized_keys
+
+          sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+
+          if ! grep -q "^PubkeyAuthentication" /etc/ssh/sshd_config; then
+            echo "PubkeyAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+          fi
+
+          sudo systemctl enable ssh
+          sudo systemctl restart ssh
+
+      - name: Show Connection Info
+        run: |
+          echo "======================================"
+          echo "User     : runner"
+          echo "Hostname : $(hostname)"
+          echo "IP       : $(tailscale ip -4)"
+          echo "======================================"
+
+      - name: Keep Runner Alive
+        run: |
+          while true; do
+            echo "$(date) Runner masih aktif..."
+            sleep 300
+          done
