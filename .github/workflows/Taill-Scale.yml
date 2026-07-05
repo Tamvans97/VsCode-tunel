@@ -1,0 +1,50 @@
+name: Tail Development
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dev:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            bc bison build-essential curl flex g++-multilib \
+            gcc-multilib git gnupg gperf imagemagick \
+            lib32ncurses5-dev lib32readline-dev lib32z1-dev \
+            libelf-dev liblz4-tool libncurses5-dev libsdl1.2-dev \
+            libssl-dev libxml2 libxml2-utils lzop pngcrush \
+            rsync schedtool squashfs-tools xsltproc zip unzip \
+            zlib1g-dev ccache python3 python-is-python3
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_CLIENT_SECRET }}
+          tags: tag:github
+
+      - name: Enable SSH
+        run: |
+          sudo tailscale set --ssh
+          echo "========================================"
+          echo "Hostname : $(hostname)"
+          echo "User     : $(whoami)"
+          echo "IP       : $(tailscale ip -4)"
+          echo "========================================"
+          tailscale status
+
+      - name: Keep Runner Alive
+        run: |
+          echo "OpenELA Development Mode"
+          echo "Runner akan hidup selama 6 jam."
+          while true; do
+            sleep 60
+          done
