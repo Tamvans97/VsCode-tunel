@@ -58,7 +58,20 @@ jobs:
 
       - name: Keep Runner Alive
         run: |
-          while true; do
-            echo "$(date) Runner masih aktif..."
-            sleep 300
+          echo "Menunggu koneksi SSH pertama masuk..."
+          
+          # 1. Tunggu sampai Anda berhasil login pertama kali via SSH
+          # Sesi akan dicek setiap 10 detik.
+          while ! who | grep -q "runner"; do
+            sleep 10
           done
+          
+          echo "Koneksi SSH terdeteksi! Memulai pemantauan sesi..."
+
+          # 2. Setelah login berhasil, cek secara berkala.
+          # Jika Anda disconnect (tidak ada lagi user 'runner' yang aktif di terminal), loop akan selesai.
+          while who | grep -q "runner"; do
+            sleep 15
+          done
+
+          echo "Terminal SSH terputus/disconnected. Menghentikan workflow..."
