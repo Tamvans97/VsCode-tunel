@@ -22,6 +22,11 @@ jobs:
             libncurses-dev python3 unzip zip rsync ccache \
             lz4 zstd
 
+      - name: Setup Git Config
+        run: |
+          git config --global user.name "Defir97"
+          git config --global user.email "firmansyahdefir97@gmail.com"
+          
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
